@@ -235,8 +235,8 @@ index cce2256..6b1f0f8 100644
      int kvm_features[VIR_DOMAIN_KVM_LAST];
 +    int xen_features[VIR_DOMAIN_XEN_LAST];
      unsigned int hyperv_spinlocks;
-     unsigned int gic_version;
- 
+     virGICVersion gic_version;
+     char *hyperv_vendor_id;
 @@ -3092,6 +3100,7 @@ VIR_ENUM_DECL(virDomainGraphicsSpiceMouseMode)
  VIR_ENUM_DECL(virDomainGraphicsVNCSharePolicy)
  VIR_ENUM_DECL(virDomainHyperv)

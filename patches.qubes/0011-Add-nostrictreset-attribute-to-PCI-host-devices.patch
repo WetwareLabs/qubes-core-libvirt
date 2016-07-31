@@ -16,35 +16,23 @@ makes sense - for example when the device is assigned to the same VM whole the
 time.
 
 Signed-off-by: Marek Marczykowski-Górecki <marmarek@invisiblethingslab.com>
----
- docs/formatdomain.html.in     |  3 +++
- docs/schemas/domaincommon.rng |  5 +++++
- src/conf/domain_conf.c        | 13 +++++++++++++
- src/conf/domain_conf.h        |  1 +
- src/util/virhostdev.c         |  1 +
- src/util/virpci.c             | 16 ++++++++++++++++
- src/util/virpci.h             |  2 ++
- 7 files changed, 41 insertions(+)
-
-diff --git a/docs/formatdomain.html.in b/docs/formatdomain.html.in
-index 58cd3a4..64ae547 100644
---- a/docs/formatdomain.html.in
-+++ b/docs/formatdomain.html.in
-@@ -3345,6 +3345,9 @@
+diff -ur -x .cproject -x .project -x '*.swp' a/docs/formatdomain.html.in b/docs/formatdomain.html.in
+--- a/docs/formatdomain.html.in	2016-07-20 23:23:39.497000000 +0300
++++ b/docs/formatdomain.html.in	2016-07-20 23:00:19.664000000 +0300
+@@ -3527,6 +3527,9 @@
              or hot-plugging the device and <code>virNodeDeviceReAttach</code>
              (or <code>virsh nodedev-reattach</code>) after hot-unplug or
              stopping the guest.
 +            Additionally when <code>strictreset</code> is "no", device will
 +            be assigned to the domain, even when reset fails. The default is
-+            "yes".
++            "yes".          
            </dd>
-           <dt>scsi</dt>
+           <dt><code>scsi</code></dt>
            <dd>For SCSI devices, user is responsible to make sure the device
-diff --git a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
-index d381869..702cfb3 100644
---- a/docs/schemas/domaincommon.rng
-+++ b/docs/schemas/domaincommon.rng
-@@ -2234,6 +2234,11 @@
+diff -ur -x .cproject -x .project -x '*.swp' a/docs/schemas/domaincommon.rng b/docs/schemas/domaincommon.rng
+--- a/docs/schemas/domaincommon.rng	2016-07-20 23:23:39.497000000 +0300
++++ b/docs/schemas/domaincommon.rng	2016-07-20 23:08:35.288000000 +0300
+@@ -2311,6 +2311,11 @@
                <ref name="virYesNo"/>
              </attribute>
            </optional>
@@ -56,11 +44,10 @@ index d381869..702cfb3 100644
            <interleave>
              <element name="source">
                <optional>
-diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index a40d53d..e85c7bf 100644
---- a/src/conf/domain_conf.c
-+++ b/src/conf/domain_conf.c
-@@ -5541,6 +5541,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+diff -ur -x .cproject -x .project -x '*.swp' a/src/conf/domain_conf.c b/src/conf/domain_conf.c
+--- a/src/conf/domain_conf.c	2016-07-20 23:23:39.500000000 +0300
++++ b/src/conf/domain_conf.c	2016-07-20 23:14:36.241000000 +0300
+@@ -5755,6 +5755,7 @@
  {
      xmlNodePtr sourcenode;
      char *managed = NULL;
@@ -68,7 +55,7 @@ index a40d53d..e85c7bf 100644
      char *sgio = NULL;
      char *rawio = NULL;
      char *backendStr = NULL;
-@@ -5559,6 +5560,11 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -5773,6 +5774,11 @@
              def->managed = true;
      }
  
@@ -80,7 +67,7 @@ index a40d53d..e85c7bf 100644
      sgio = virXMLPropString(node, "sgio");
      rawio = virXMLPropString(node, "rawio");
  
-@@ -5665,6 +5671,7 @@ virDomainHostdevDefParseXMLSubsys(xmlNodePtr node,
+@@ -5879,6 +5885,7 @@
      ret = 0;
   error:
      VIR_FREE(managed);
@@ -88,7 +75,7 @@ index a40d53d..e85c7bf 100644
      VIR_FREE(sgio);
      VIR_FREE(rawio);
      VIR_FREE(backendStr);
-@@ -19717,6 +19724,8 @@ virDomainActualNetDefFormat(virBufferPtr buf,
+@@ -20237,6 +20244,8 @@
          virDomainHostdevDefPtr hostdef = virDomainNetGetActualHostdev(def);
          if  (hostdef && hostdef->managed)
              virBufferAddLit(buf, " managed='yes'");
@@ -97,7 +84,7 @@ index a40d53d..e85c7bf 100644
      }
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
-@@ -19887,6 +19896,8 @@ virDomainNetDefFormat(virBufferPtr buf,
+@@ -20408,6 +20418,8 @@
      virBufferAsprintf(buf, "<interface type='%s'", typeStr);
      if (hostdef && hostdef->managed)
          virBufferAddLit(buf, " managed='yes'");
@@ -106,7 +93,7 @@ index a40d53d..e85c7bf 100644
      if (def->trustGuestRxFilters)
          virBufferAsprintf(buf, " trustGuestRxFilters='%s'",
                            virTristateBoolTypeToString(def->trustGuestRxFilters));
-@@ -21294,6 +21305,8 @@ virDomainHostdevDefFormat(virBufferPtr buf,
+@@ -21874,6 +21886,8 @@
      if (def->mode == VIR_DOMAIN_HOSTDEV_MODE_SUBSYS) {
          virBufferAsprintf(buf, " managed='%s'",
                            def->managed ? "yes" : "no");
@@ -115,11 +102,10 @@ index a40d53d..e85c7bf 100644
  
          if (def->source.subsys.type == VIR_DOMAIN_HOSTDEV_SUBSYS_TYPE_SCSI &&
              scsisrc->sgio)
-diff --git a/src/conf/domain_conf.h b/src/conf/domain_conf.h
-index b1b7f19..df034dc 100644
---- a/src/conf/domain_conf.h
-+++ b/src/conf/domain_conf.h
-@@ -546,6 +546,7 @@ struct _virDomainHostdevDef {
+diff -ur -x .cproject -x .project -x '*.swp' a/src/conf/domain_conf.h b/src/conf/domain_conf.h
+--- a/src/conf/domain_conf.h	2016-07-20 23:23:39.501000000 +0300
++++ b/src/conf/domain_conf.h	2016-07-20 23:15:18.524000000 +0300
+@@ -421,6 +421,7 @@
      bool missing;
      bool readonly;
      bool shareable;
@@ -127,31 +113,30 @@ index b1b7f19..df034dc 100644
      union {
          virDomainHostdevSubsys subsys;
          virDomainHostdevCaps caps;
-diff --git a/src/util/virhostdev.c b/src/util/virhostdev.c
-index 0bc5120..8ef1a1a 100644
---- a/src/util/virhostdev.c
-+++ b/src/util/virhostdev.c
-@@ -253,6 +253,7 @@ virHostdevGetPCIHostDeviceList(virDomainHostdevDefPtr *hostdevs, int nhostdevs)
-                 return NULL;
-             }
-         }
-+        virPCIDeviceSetStrictReset(dev, !hostdev->nostrictreset);
+diff -ur -x .cproject -x .project -x '*.swp' a/src/util/virhostdev.c b/src/util/virhostdev.c
+--- a/src/util/virhostdev.c	2016-05-24 12:26:53.000000000 +0300
++++ b/src/util/virhostdev.c	2016-07-20 23:17:29.390000000 +0300
+@@ -260,6 +260,8 @@
+             virPCIDeviceSetStubDriver(pci, VIR_PCI_STUB_DRIVER_XEN);
+         else
+             virPCIDeviceSetStubDriver(pci, VIR_PCI_STUB_DRIVER_KVM);
++
++        virPCIDeviceSetStrictReset(pci, !hostdev->nostrictreset);
      }
  
-     return list;
-diff --git a/src/util/virpci.c b/src/util/virpci.c
-index 2110a32..0e33dfa 100644
---- a/src/util/virpci.c
-+++ b/src/util/virpci.c
-@@ -74,6 +74,7 @@ struct _virPCIDevice {
+     return pcidevs;
+diff -ur -x .cproject -x .project -x '*.swp' a/src/util/virpci.c b/src/util/virpci.c
+--- a/src/util/virpci.c	2016-07-20 23:23:39.518000000 +0300
++++ b/src/util/virpci.c	2016-07-20 23:21:08.772000000 +0300
+@@ -84,6 +84,7 @@
      bool          has_flr;
      bool          has_pm_reset;
      bool          managed;
 +    bool          strictreset;
-     char          *stubDriver;
  
-     /* used by reattach function */
-@@ -980,6 +981,9 @@ virPCIDeviceReset(virPCIDevicePtr dev,
+     virPCIStubDriver stubDriver;
+ 
+@@ -995,6 +996,9 @@
                         dev->name,
                         err ? err->message :
                         _("no FLR, PM reset or bus reset available"));
@@ -161,15 +146,15 @@ index 2110a32..0e33dfa 100644
      }
  
   cleanup:
-@@ -1564,6 +1568,7 @@ virPCIDeviceNew(unsigned int domain,
-     dev->bus      = bus;
-     dev->slot     = slot;
-     dev->function = function;
+@@ -1598,6 +1602,7 @@
+     dev->address.bus = bus;
+     dev->address.slot = slot;
+     dev->address.function = function;
 +    dev->strictreset    = true;
  
      if (snprintf(dev->name, sizeof(dev->name), "%.4x:%.2x:%.2x.%.1x",
-                  dev->domain, dev->bus, dev->slot,
-@@ -1699,6 +1704,17 @@ virPCIDeviceGetManaged(virPCIDevicePtr dev)
+                  domain, bus, slot, function) >= sizeof(dev->name)) {
+@@ -1719,6 +1724,17 @@
      return dev->managed;
  }
  
@@ -184,22 +169,18 @@ index 2110a32..0e33dfa 100644
 +    return dev->strictreset;
 +}
 +
- int
- virPCIDeviceSetStubDriver(virPCIDevicePtr dev, const char *driver)
+ void
+ virPCIDeviceSetStubDriver(virPCIDevicePtr dev, virPCIStubDriver driver)
  {
-diff --git a/src/util/virpci.h b/src/util/virpci.h
-index 64b9e96..23470de 100644
---- a/src/util/virpci.h
-+++ b/src/util/virpci.h
-@@ -90,6 +90,8 @@ int virPCIDeviceReset(virPCIDevicePtr dev,
+diff -ur -x .cproject -x .project -x '*.swp' a/src/util/virpci.h b/src/util/virpci.h
+--- a/src/util/virpci.h	2016-05-24 12:26:53.000000000 +0300
++++ b/src/util/virpci.h	2016-07-20 23:21:54.934000000 +0300
+@@ -111,6 +111,8 @@
  void virPCIDeviceSetManaged(virPCIDevice *dev,
                              bool managed);
- unsigned int virPCIDeviceGetManaged(virPCIDevice *dev);
+ bool virPCIDeviceGetManaged(virPCIDevice *dev);
 +void virPCIDeviceSetStrictReset(virPCIDevice *dev, bool strictreset);
 +unsigned int virPCIDeviceGetStrictReset(virPCIDevicePtr dev);
- int virPCIDeviceSetStubDriver(virPCIDevicePtr dev,
-                               const char *driver)
-     ATTRIBUTE_NONNULL(2);
--- 
-2.1.0
-
+ void virPCIDeviceSetStubDriver(virPCIDevicePtr dev,
+                                virPCIStubDriver driver);
+ virPCIStubDriver virPCIDeviceGetStubDriver(virPCIDevicePtr dev);

@@ -30,9 +30,9 @@ index 35fd495..027a26d 100644
 +    if (VIR_STRDUP(x_disk->script, l_disk->script) < 0)
 +        return -1;
 +
-     driver = virDomainDiskGetDriver(l_disk);
-     format = virDomainDiskGetFormat(l_disk);
      if (driver) {
+         if (STREQ(driver, "tap") || STREQ(driver, "tap2")) {
+             switch (format) {
 -- 
 2.1.0
 

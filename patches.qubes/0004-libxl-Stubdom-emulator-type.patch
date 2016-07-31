@@ -89,11 +89,9 @@ index 91414b9..2b9e6b3 100644
      </element>
    </define>
    <!--
-diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 40474a0..36a8c73 100644
---- a/src/conf/domain_conf.c
-+++ b/src/conf/domain_conf.c
-@@ -777,6 +777,10 @@ VIR_ENUM_IMPL(virDomainDiskTray, VIR_DOMAIN_DISK_TRAY_LAST,
+--- a/src/conf/domain_conf.c	2016-07-20 22:22:13.139000000 +0300
++++ b/src/conf/domain_conf.c	2016-07-20 22:27:55.154000000 +0300
+@@ -786,6 +786,10 @@
                "closed",
                "open");
  
@@ -104,9 +102,9 @@ index 40474a0..36a8c73 100644
  VIR_ENUM_IMPL(virDomainRNGModel,
                VIR_DOMAIN_RNG_MODEL_LAST,
                "virtio");
-@@ -15751,6 +15755,16 @@ virDomainDefParseXML(xmlDocPtr xml,
-             goto error;
-     }
+@@ -16315,6 +16319,17 @@
+     if (virDomainDefParseBootOptions(def, ctxt, &bootHash) < 0)
+         goto error;
  
 +    def->emulator = virXPathString("string(./devices/emulator[1])", ctxt);
 +    if ((tmp = virXPathString("string(./devices/emulator/@type)", ctxt))) {
@@ -118,10 +116,11 @@ index 40474a0..36a8c73 100644
 +        }
 +    }
 +    def->emulator_cmdline = virXPathString("string(./devices/emulator/@cmdline)", ctxt);
- 
++
      /* analysis of the disk devices */
      if ((n = virXPathNodeSet("./devices/disk", ctxt, &nodes)) < 0)
-@@ -17787,6 +17801,14 @@ virDomainDefCheckABIStability(virDomainDefPtr src,
+         goto error;
+@@ -18346,6 +18361,14 @@
          goto error;
      }
  
@@ -136,7 +135,7 @@ index 40474a0..36a8c73 100644
      if (!virDomainDefFeaturesCheckABIStability(src, dst))
          goto error;
  
-@@ -22214,8 +22236,21 @@ virDomainDefFormatInternal(virDomainDefPtr def,
+@@ -23021,8 +23044,21 @@
      virBufferAddLit(buf, "<devices>\n");
      virBufferAdjustIndent(buf, 2);
  

@@ -44,11 +44,9 @@ index f196177..91414b9 100644
          <element name="readonly">
            <empty/>
          </element>
-diff --git a/src/conf/domain_conf.c b/src/conf/domain_conf.c
-index 393ece7..40474a0 100644
---- a/src/conf/domain_conf.c
-+++ b/src/conf/domain_conf.c
-@@ -1462,6 +1462,7 @@ virDomainDiskDefFree(virDomainDiskDefPtr def)
+--- a/src/conf/domain_conf.c	2016-06-04 16:19:09.000000000 +0300
++++ b/src/conf/domain_conf.c	2016-07-20 21:53:31.109000000 +0300
+@@ -1559,6 +1559,7 @@
      VIR_FREE(def->vendor);
      VIR_FREE(def->product);
      VIR_FREE(def->domain_name);
@@ -56,25 +54,25 @@ index 393ece7..40474a0 100644
      virDomainDeviceInfoClear(&def->info);
      virObjectUnref(def->privateData);
  
-@@ -6660,6 +6661,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     char *mirrorFormat = NULL;
-     char *mirrorType = NULL;
+@@ -7251,6 +7252,7 @@
+     char *vendor = NULL;
+     char *product = NULL;
      char *domain_name = NULL;
 +    char *script = NULL;
      int expected_secret_usage = -1;
      int auth_secret_usage = -1;
-     int ret = 0;
-@@ -6728,6 +6730,9 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-             } else if (!domain_name &&
-                        xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
-                 domain_name = virXMLPropString(cur, "name");
-+            } else if (!script &&
-+                       xmlStrEqual(cur->name, BAD_CAST "script")) {
-+                script = virXMLPropString(cur, "path");
-             } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
-                 if (virXPathUInt("string(./geometry/@cyls)",
-                                  ctxt, &def->geometry.cylinders) < 0) {
-@@ -7463,6 +7468,8 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
+ 
+@@ -7320,6 +7322,9 @@
+         } else if (!domain_name &&
+                    xmlStrEqual(cur->name, BAD_CAST "backenddomain")) {
+             domain_name = virXMLPropString(cur, "name");
++        } else if (!script &&
++                xmlStrEqual(cur->name, BAD_CAST "script")) {
++            script = virXMLPropString(cur, "path");
+         } else if (xmlStrEqual(cur->name, BAD_CAST "geometry")) {
+             if (virDomainDiskDefGeometryParse(def, cur, ctxt) < 0)
+                 goto error;
+@@ -7619,6 +7624,8 @@
      encryption = NULL;
      def->domain_name = domain_name;
      domain_name = NULL;
@@ -83,15 +81,15 @@ index 393ece7..40474a0 100644
      def->serial = serial;
      serial = NULL;
      def->wwn = wwn;
-@@ -7522,6 +7529,7 @@ virDomainDiskDefParseXML(virDomainXMLOptionPtr xmlopt,
-     VIR_FREE(mirrorType);
-     VIR_FREE(mirrorFormat);
+@@ -7656,6 +7663,7 @@
+     VIR_FREE(vendor);
+     VIR_FREE(product);
      VIR_FREE(domain_name);
 +    VIR_FREE(script);
  
      ctxt->node = save_ctxt;
      return def;
-@@ -18961,6 +18969,7 @@ virDomainDiskDefFormat(virBufferPtr buf,
+@@ -19466,6 +19474,7 @@
          return -1;
  
      virBufferEscapeString(buf, "<backenddomain name='%s'/>\n", def->domain_name);
