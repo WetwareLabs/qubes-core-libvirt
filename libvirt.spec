@@ -1560,10 +1560,7 @@ rm -fr %{buildroot}
 # on RHEL 5, thus we need to expand it here.
 make install DESTDIR=%{?buildroot} SYSTEMD_UNIT_DIR=%{_unitdir}
 
-for i in object-events dominfo domsuspend hellolibvirt openauth xml/nwfilter systemtap dommigrate
-do
-  (cd examples/$i ; make clean ; rm -rf .deps .libs Makefile Makefile.in)
-done
+cd examples; make clean ; rm -rf .deps .libs Makefile Makefile.in; cd ..
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 rm -f $RPM_BUILD_ROOT%{_libdir}/*.a
 rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/lock-driver/*.la
@@ -1575,6 +1572,12 @@ rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt/connection-driver/*.a
 %if %{with_wireshark}
 rm -f $RPM_BUILD_ROOT%{_libdir}/wireshark/plugins/*/libvirt.la
 %endif
+
+# Temporarily get rid of not-installed admin-related files
+rm -f $RPM_BUILD_ROOT%{_libdir}/libvirt-admin.so
+rm -f $RPM_BUILD_ROOT%{_bindir}/virt-admin
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-admin.1*
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/libvirt-admin.conf
 
 %if %{with_network}
 install -d -m 0755 $RPM_BUILD_ROOT%{_datadir}/lib/libvirt/dnsmasq/
@@ -1606,6 +1609,9 @@ rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirt_sanlock.aug
 %if ! %{with_lxc}
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/libvirtd_lxc.aug
 rm -f $RPM_BUILD_ROOT%{_datadir}/augeas/lenses/tests/test_libvirtd_lxc.aug
+rm -f $RPM_BUILD_ROOT%{_bindir}/virt-login-shell
+rm -f $RPM_BUILD_ROOT%{_sysconfdir}/libvirt/virt-login-shell.conf
+rm -f $RPM_BUILD_ROOT%{_mandir}/man1/virt-login-shell.1*
 %endif
 
 %if ! %{with_qemu}
@@ -1726,11 +1732,14 @@ done
 
     %if %{with_systemd}
         %if %{with_systemd_macros}
-            %systemd_post virtlockd.socket libvirtd.service
+            %systemd_post virtlockd.socket virtlogd.socket libvirtd.service
         %else
 if [ $1 -eq 1 ] ; then
     # Initial installation
-    /bin/systemctl enable virtlockd.socket libvirtd.service >/dev/null 2>&1 || :
+    /bin/systemctl enable \
+        virtlockd.socket \
+        virtlogd.socket \
+        libvirtd.service >/dev/null 2>&1 || :
 fi
         %endif
     %else
@@ -1745,24 +1754,37 @@ fi
         %endif
 
 /sbin/chkconfig --add libvirtd
+/sbin/chkconfig --add virtlogd
 /sbin/chkconfig --add virtlockd
     %endif
 
 %preun daemon
     %if %{with_systemd}
         %if %{with_systemd_macros}
-            %systemd_preun libvirtd.service virtlockd.socket virtlockd.service
+            %systemd_preun libvirtd.service virtlogd.service virtlockd.socket virtlockd.service
         %else
 if [ $1 -eq 0 ] ; then
     # Package removal, not upgrade
-    /bin/systemctl --no-reload disable libvirtd.service virtlockd.socket virtlockd.service > /dev/null 2>&1 || :
-    /bin/systemctl stop libvirtd.service virtlockd.socket virtlockd.service > /dev/null 2>&1 || :
+    /bin/systemctl --no-reload disable \
+        libvirtd.service \
+        virtlogd.socket \
+        virtlogd.service \
+        virtlockd.socket \
+        virtlockd.service > /dev/null 2>&1 || :
+    /bin/systemctl stop \
+        libvirtd.service \
+        virtlogd.socket \
+        virtlogd.service \
+        virtlockd.socket \
+        virtlockd.service > /dev/null 2>&1 || :
 fi
         %endif
     %else
 if [ $1 = 0 ]; then
     /sbin/service libvirtd stop 1>/dev/null 2>&1
     /sbin/chkconfig --del libvirtd
+    /sbin/service virtlogd stop 1>/dev/null 2>&1
+    /sbin/chkconfig --del virtlogd
     /sbin/service virtlockd stop 1>/dev/null 2>&1
     /sbin/chkconfig --del virtlockd
 fi
@@ -1773,11 +1795,13 @@ fi
 /bin/systemctl daemon-reload >/dev/null 2>&1 || :
 if [ $1 -ge 1 ] ; then
     /bin/systemctl reload-or-try-restart virtlockd.service >/dev/null 2>&1 || :
+    /bin/systemctl reload-or-try-restart virtlogd.service >/dev/null 2>&1 || :
     /bin/systemctl try-restart libvirtd.service >/dev/null 2>&1 || :
 fi
     %else
 if [ $1 -ge 1 ]; then
     /sbin/service virtlockd reload > /dev/null 2>&1 || :
+    /sbin/service virtlogd reload > /dev/null 2>&1 || :
     /sbin/service libvirtd condrestart > /dev/null 2>&1
 fi
     %endif
@@ -1787,9 +1811,30 @@ fi
 %triggerpostun daemon -- libvirt-daemon < 1.2.1
 if [ "$1" -ge "1" ]; then
     /sbin/service virtlockd reload > /dev/null 2>&1 || :
+    /sbin/service virtlogd reload > /dev/null 2>&1 || :
     /sbin/service libvirtd condrestart > /dev/null 2>&1
 fi
     %endif
+
+# In upgrade scenario we must explicitly enable virtlockd/virtlogd
+# sockets, if libvirtd is already enabled and start them if
+# libvirtd is running, otherwise you'll get failures to start
+# guests
+%triggerpostun daemon -- libvirt-daemon < 1.3.0
+if [ $1 -ge 1 ] ; then
+%if %{with_systemd}
+        /bin/systemctl is-enabled libvirtd.service 1>/dev/null 2>&1 &&
+            /bin/systemctl enable virtlogd.socket || :
+        /bin/systemctl is-active libvirtd.service 1>/dev/null 2>&1 &&
+            /bin/systemctl start virtlogd.socket || :
+%else
+        /sbin/chkconfig libvirtd 1>/dev/null 2>&1 &&
+            /sbin/chkconfig virtlogd on || :
+        /sbin/service libvirtd status 1>/dev/null 2>&1 &&
+            /sbin/service virtlogd start || :
+%endif
+fi
+
 
     %if %{with_network}
 %post daemon-config-network
@@ -1913,17 +1958,21 @@ exit 0
 
     %if %{with_systemd}
 %{_unitdir}/libvirtd.service
-%{_unitdir}/libvirtd.socket
+%{_unitdir}/virtlogd.service
+%{_unitdir}/virtlogd.socket
 %{_unitdir}/virtlockd.service
 %{_unitdir}/virtlockd.socket
     %else
 %{_sysconfdir}/rc.d/init.d/libvirtd
+%{_sysconfdir}/rc.d/init.d/virtlogd
 %{_sysconfdir}/rc.d/init.d/virtlockd
     %endif
 %doc daemon/libvirtd.upstart
 %config(noreplace) %{_sysconfdir}/sysconfig/libvirtd
+%config(noreplace) %{_sysconfdir}/sysconfig/virtlogd
 %config(noreplace) %{_sysconfdir}/sysconfig/virtlockd
 %config(noreplace) %{_sysconfdir}/libvirt/libvirtd.conf
+%config(noreplace) %{_sysconfdir}/libvirt/virtlogd.conf
 %config(noreplace) %{_sysconfdir}/libvirt/virtlockd.conf
     %if 0%{?fedora} >= 14 || 0%{?rhel} >= 6
 %config(noreplace) %{_prefix}/lib/sysctl.d/60-libvirtd.conf
@@ -1945,6 +1994,8 @@ exit 0
 
 %{_datadir}/augeas/lenses/libvirtd.aug
 %{_datadir}/augeas/lenses/tests/test_libvirtd.aug
+%{_datadir}/augeas/lenses/virtlogd.aug
+%{_datadir}/augeas/lenses/tests/test_virtlogd.aug
 %{_datadir}/augeas/lenses/virtlockd.aug
 %{_datadir}/augeas/lenses/tests/test_virtlockd.aug
 %{_datadir}/augeas/lenses/libvirt_lockd.aug
@@ -1970,9 +2021,11 @@ exit 0
     %endif
 
 %attr(0755, root, root) %{_sbindir}/libvirtd
+%attr(0755, root, root) %{_sbindir}/virtlogd
 %attr(0755, root, root) %{_sbindir}/virtlockd
 
 %{_mandir}/man8/libvirtd.8*
+%{_mandir}/man8/virtlogd.8*
 %{_mandir}/man8/virtlockd.8*
 
     %if ! %{with_driver_modules}
