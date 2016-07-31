@@ -57,7 +57,7 @@ new file mode 100644
 index 0000000..3b16872
 --- /dev/null
 +++ b/tests/sexpr2xmldata/sexpr2xml-bridge-driver-domain.xml
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,38 @@
 +<domain type='xen' id='6'>
 +  <name>pvtest</name>
 +  <uuid>596a5d21-71f4-8fb2-e068-e2386a5c413e</uuid>
@@ -91,6 +91,9 @@ index 0000000..3b16872
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
++    <memballoon model='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/sexpr2xmltest.c b/tests/sexpr2xmltest.c
@@ -98,13 +101,13 @@ index 99999f1..85ba645 100644
 --- a/tests/sexpr2xmltest.c
 +++ b/tests/sexpr2xmltest.c
 @@ -150,6 +150,7 @@ mymain(void)
-     DO_TEST("net-bridged", "net-bridged", 2);
-     DO_TEST("net-e1000", "net-e1000", 2);
-     DO_TEST("bridge-ipaddr", "bridge-ipaddr", 3);
-+    DO_TEST("bridge-driver-domain", "bridge-driver-domain", 3);
-     DO_TEST("no-source-cdrom", "no-source-cdrom", 2);
-     DO_TEST("pv-localtime", "pv-localtime", 2);
-     DO_TEST("pci-devs", "pci-devs", 2);
+     DO_TEST("net-bridged", "net-bridged");
+     DO_TEST("net-e1000", "net-e1000");
+     DO_TEST("bridge-ipaddr", "bridge-ipaddr");
++    DO_TEST("bridge-driver-domain", "bridge-driver-domain");
+     DO_TEST("no-source-cdrom", "no-source-cdrom");
+     DO_TEST("pv-localtime", "pv-localtime");
+     DO_TEST("pci-devs", "pci-devs");
 -- 
 2.1.0
 

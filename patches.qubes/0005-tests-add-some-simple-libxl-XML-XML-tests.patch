@@ -37,8 +37,8 @@ index 4af38fe..0a69ccd 100644
 --- a/tests/Makefile.am
 +++ b/tests/Makefile.am
 @@ -90,6 +90,7 @@ EXTRA_DIST =		\
- 	domainsnapshotxml2xmlout \
- 	fchostdata \
+ 	genericxml2xmlindata \
+ 	genericxml2xmloutdata \
  	interfaceschemadata \
 +	xlxml2xmldata \
  	lxcconf2xmldata \
@@ -71,21 +71,22 @@ diff --git a/tests/domainschematest b/tests/domainschematest
 index ba90180..18b442b 100755
 --- a/tests/domainschematest
 +++ b/tests/domainschematest
-@@ -8,7 +8,7 @@ DIRS=""
- DIRS="$DIRS domainschemadata qemuxml2argvdata sexpr2xmldata"
+@@ -8,8 +8,9 @@ DIRS=""
+ DIRS="$DIRS domainschemadata qemuargv2xmldata qemuxml2argvdata sexpr2xmldata"
  DIRS="$DIRS xmconfigdata xml2sexprdata qemuxml2xmloutdata"
  DIRS="$DIRS lxcxml2xmldata lxcxml2xmloutdata"
--DIRS="$DIRS bhyvexml2argvdata"
-+DIRS="$DIRS bhyvexml2argvdata xlxml2xmldata"
+ DIRS="$DIRS bhyvexml2argvdata genericxml2xmlindata genericxml2xmloutdata"
++DIRS="$DIRS xlxml2xmldata"
+ DIRS="$DIRS xlconfigdata"
  SCHEMA="domain.rng"
- 
+
  check_schema "$DIRS" "$SCHEMA"
 diff --git a/tests/xlxml2xmldata/xlxml2xml-hvm-stubdom.xml b/tests/xlxml2xmldata/xlxml2xml-hvm-stubdom.xml
 new file mode 100644
 index 0000000..ed6440c
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-hvm-stubdom.xml
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,43 @@
 +<domain type='xen'>
 +  <name>testhvm</name>
 +  <uuid>a3d3fa04-dc23-4136-9eab-b579d2930817</uuid>
@@ -125,6 +126,8 @@ index 0000000..ed6440c
 +      <source network='default'/>
 +    </interface>
 +    <input type='tablet' bus='usb'/>
++    <input type='mouse' bus='ps2'/>
++    <input type='keyboard' bus='ps2'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-hvm.xml b/tests/xlxml2xmldata/xlxml2xml-hvm.xml
@@ -132,7 +135,7 @@ new file mode 100644
 index 0000000..95d9b84
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-hvm.xml
-@@ -0,0 +1,40 @@
+@@ -0,0 +1,42 @@
 +<domain type='xen'>
 +  <name>testhvm</name>
 +  <uuid>a3d3fa04-dc23-4136-9eab-b579d2930817</uuid>
@@ -171,6 +174,8 @@ index 0000000..95d9b84
 +      <source network='default'/>
 +    </interface>
 +    <input type='tablet' bus='usb'/>
++    <input type='mouse' bus='ps2'/>
++    <input type='keyboard' bus='ps2'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-network-bridged.xml b/tests/xlxml2xmldata/xlxml2xml-network-bridged.xml
@@ -178,7 +183,7 @@ new file mode 100644
 index 0000000..a6b8f59
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-network-bridged.xml
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,40 @@
 +<domain type='xen'>
 +  <name>testvm</name>
 +  <uuid>900e3685-4998-41ad-a2c9-e496a5ed40a4</uuid>
@@ -215,6 +220,8 @@ index 0000000..a6b8f59
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml b/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml
@@ -222,7 +229,7 @@ new file mode 100644
 index 0000000..ef0e06c
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-network-driver-domain.xml
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,41 @@
 +<domain type='xen'>
 +  <name>testvm</name>
 +  <uuid>900e3685-4998-41ad-a2c9-e496a5ed40a4</uuid>
@@ -260,6 +267,8 @@ index 0000000..ef0e06c
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-network-routed.xml b/tests/xlxml2xmldata/xlxml2xml-network-routed.xml
@@ -267,7 +276,7 @@ new file mode 100644
 index 0000000..fac9d8d
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-network-routed.xml
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,41 @@
 +<domain type='xen'>
 +  <name>testvm</name>
 +  <uuid>900e3685-4998-41ad-a2c9-e496a5ed40a4</uuid>
@@ -305,6 +314,8 @@ index 0000000..fac9d8d
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmldata/xlxml2xml-pv.xml b/tests/xlxml2xmldata/xlxml2xml-pv.xml
@@ -312,7 +323,7 @@ new file mode 100644
 index 0000000..b937b8b
 --- /dev/null
 +++ b/tests/xlxml2xmldata/xlxml2xml-pv.xml
-@@ -0,0 +1,38 @@
+@@ -0,0 +1,40 @@
 +<domain type='xen'>
 +  <name>testvm</name>
 +  <uuid>900e3685-4998-41ad-a2c9-e496a5ed40a4</uuid>
@@ -349,6 +360,8 @@ index 0000000..b937b8b
 +    <console type='pty'>
 +      <target type='xen' port='0'/>
 +    </console>
++    <input type='mouse' bus='xen'/>
++    <input type='keyboard' bus='xen'/>
 +  </devices>
 +</domain>
 diff --git a/tests/xlxml2xmltest.c b/tests/xlxml2xmltest.c
@@ -409,7 +422,7 @@ index 0000000..ca70400
 +        goto fail;
 +    }
 +
-+    if (!(actual = virDomainDefFormat(def, format_flags)))
++    if (!(actual = virDomainDefFormat(def, caps, format_flags)))
 +        goto fail;
 +
 +    if (STRNEQ(outXmlData, actual)) {
